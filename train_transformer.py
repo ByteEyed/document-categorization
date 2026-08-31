@@ -136,13 +136,21 @@ def run_fine_tuning(model_key: str, dataset_key: str):
     log_history = trainer.state.log_history
     train_losses = [log['loss'] for log in log_history if 'loss' in log]
     val_losses = [log['eval_loss'] for log in log_history if 'eval_loss' in log]
-    # Simple interpolation to match epochs if needed, or just plot as is if steps match
-    if train_losses and val_losses:
+    
+    if train_losses:
+        # Plot train loss curve (per step) — don't pass val_losses since they have different x-axis
         utils.plot_training_history(
             train_losses,
+            val_losses=None,
+            title=f"Training Loss: {model_key} on {dataset_key}",
+            save_path=config.FIGURES_DIR / f"train_loss_{model_key}_{dataset_key}.{config.FIGURE_FORMAT}"
+        )
+    if val_losses:
+        utils.plot_training_history(
             val_losses,
-            title=f"Training History: {model_key} on {dataset_key}",
-            save_path=config.FIGURES_DIR / f"train_history_{model_key}_{dataset_key}.{config.FIGURE_FORMAT}"
+            val_losses=None,
+            title=f"Validation Loss: {model_key} on {dataset_key} (per epoch)",
+            save_path=config.FIGURES_DIR / f"val_loss_{model_key}_{dataset_key}.{config.FIGURE_FORMAT}"
         )
     
     # 6. Evaluation
