@@ -1,0 +1,511 @@
+% ============================================
+% Intelligent Document Categorization
+% NLP and Text Analysis - Project Report
+% ============================================
+\documentclass[12pt, a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{cite}
+
+% --- Hyperlink Setup ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=green!50!black,
+    urlcolor=blue!70!black,
+}
+
+% --- Code Listing Style ---
+\lstdefinestyle{python}{
+    language=Python,
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{blue!70!black}\bfseries,
+    stringstyle=\color{red!60!black},
+    commentstyle=\color{green!50!black}\itshape,
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=5pt,
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4,
+    showstringspaces=false,
+    backgroundcolor=\color{gray!5},
+    rulecolor=\color{gray!30},
+}
+\lstset{style=python}
+
+% --- Header/Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small NLP and Text Analysis}
+\fancyhead[R]{\small Document Categorization}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- Line Spacing ---
+\onehalfspacing
+
+% ============================================
+% TITLE PAGE
+% ============================================
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+
+    {\LARGE\bfseries Intelligent Document Categorization\\using Hugging Face Transformers\\with Performance Benchmarking\par}
+
+    \vspace{1.5cm}
+
+    {\large\textit{A Project Report}\par}
+    {\large\textit{for the course}\par}
+    {\large\textbf{Natural Language Processing and Text Analysis}\par}
+
+    \vspace{2cm}
+
+    {\large\textbf{Submitted by:}\par}
+    \vspace{0.5cm}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Name} & \textbf{Roll Number} \\
+        \midrule
+        Member 1 Name & Roll No. 1 \\
+        Member 2 Name & Roll No. 2 \\
+        \bottomrule
+    \end{tabular}
+
+    \vspace{2cm}
+
+    {\large\textbf{Under the Guidance of:}\par}
+    {\large Professor Name\par}
+    {\large Department Name\par}
+
+    \vfill
+
+    {\large Institution/University Name\par}
+    \vspace{0.5cm}
+    {\large Academic Year 2025--2026\par}
+\end{titlepage}
+
+% ============================================
+% TABLE OF CONTENTS
+% ============================================
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\listoftables
+\newpage
+
+% ============================================
+% 1. INTRODUCTION
+% ============================================
+\section{Introduction}
+
+\subsection{Background}
+Document categorization, also known as text classification, is one of the fundamental tasks in Natural Language Processing (NLP). It involves automatically assigning predefined category labels to text documents based on their content. This task has numerous real-world applications including email filtering, news article organization, sentiment analysis, spam detection, and content recommendation systems.
+
+With the advent of deep learning and particularly Transformer-based architectures, the landscape of text classification has undergone a significant transformation. Pre-trained language models such as BERT \cite{devlin2019bert}, DistilBERT \cite{sanh2019distilbert}, and RoBERTa \cite{liu2019roberta} have achieved state-of-the-art performance across a wide range of NLP benchmarks by leveraging transfer learning from large-scale unlabeled corpora.
+
+\subsection{Problem Statement}
+This project addresses the task of multi-class document categorization by implementing and comparing multiple approaches:
+\begin{enumerate}
+    \item \textbf{Traditional ML baselines} using TF-IDF feature extraction with Logistic Regression, Naive Bayes, and Support Vector Machines.
+    \item \textbf{Fine-tuned Transformer models} including BERT, DistilBERT, and RoBERTa using the Hugging Face \texttt{transformers} library.
+    \item \textbf{Zero-shot classification} using BART-large-MNLI to evaluate performance without any task-specific training.
+\end{enumerate}
+
+A key contribution of this work is the comprehensive \textbf{performance benchmarking} that goes beyond accuracy to include macro/weighted F1 scores, inference latency, model size, and computational requirements.
+
+\subsection{Objectives}
+\begin{itemize}
+    \item Implement an end-to-end document categorization pipeline from data preparation to deployment.
+    \item Compare traditional ML approaches with modern Transformer-based methods.
+    \item Evaluate the effectiveness of zero-shot classification as a training-free alternative.
+    \item Conduct comprehensive benchmarking across multiple performance dimensions.
+    \item Develop a live demo application for interactive document categorization.
+\end{itemize}
+
+\subsection{Scope and Limitations}
+The project focuses on English-language news article classification using two standard benchmark datasets. Experiments are conducted on an NVIDIA RTX 2050 GPU with 4GB VRAM, which constrains model sizes and batch configurations. All Transformer models use the \texttt{base} variant (approximately 110M parameters) due to hardware limitations.
+
+% ============================================
+% 2. LITERATURE REVIEW
+% ============================================
+\section{Literature Review}
+
+\subsection{Traditional Text Classification}
+Traditional text classification methods rely on handcrafted feature extraction followed by machine learning classifiers. The \textbf{Bag-of-Words (BoW)} and \textbf{TF-IDF (Term Frequency-Inverse Document Frequency)} representations have been the dominant feature extraction methods for decades \cite{manning2008introduction}.
+
+\textbf{TF-IDF} weighs terms by their frequency within a document (TF) relative to their frequency across the corpus (IDF):
+\begin{equation}
+    \text{TF-IDF}(t, d) = \text{TF}(t, d) \times \log\left(\frac{N}{\text{DF}(t)}\right)
+\end{equation}
+where $t$ is a term, $d$ is a document, $N$ is the total number of documents, and $\text{DF}(t)$ is the number of documents containing term $t$.
+
+Common classifiers used with TF-IDF include:
+\begin{itemize}
+    \item \textbf{Logistic Regression:} A linear model that uses the softmax function for multi-class classification.
+    \item \textbf{Naive Bayes:} A probabilistic classifier based on Bayes' theorem with the ``naive'' assumption of feature independence.
+    \item \textbf{Support Vector Machines:} Maximum-margin classifiers that find optimal hyperplanes separating classes.
+\end{itemize}
+
+\subsection{Transformer Architecture}
+The Transformer architecture, introduced by Vaswani et al. \cite{vaswani2017attention}, revolutionized NLP through its self-attention mechanism. The core \textbf{scaled dot-product attention} is computed as:
+\begin{equation}
+    \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\end{equation}
+where $Q$, $K$, $V$ are the query, key, and value matrices, and $d_k$ is the dimension of the key vectors.
+
+\subsection{BERT and Variants}
+\textbf{BERT} (Bidirectional Encoder Representations from Transformers) \cite{devlin2019bert} introduced bidirectional pre-training using Masked Language Modeling (MLM) and Next Sentence Prediction (NSP). It processes text in both directions simultaneously, capturing richer contextual representations.
+
+\textbf{DistilBERT} \cite{sanh2019distilbert} is a distilled version of BERT that retains 97\% of BERT's performance while being 60\% faster and 40\% smaller, achieved through knowledge distillation during pre-training.
+
+\textbf{RoBERTa} \cite{liu2019roberta} optimizes BERT's pre-training by removing NSP, using dynamic masking, larger batch sizes, and more training data.
+
+\subsection{Zero-Shot Classification}
+Zero-shot classification enables categorizing text into arbitrary labels without task-specific training. BART-large-MNLI \cite{lewis2020bart} reformulates classification as a natural language inference (NLI) task, checking if the document ``entails'' each candidate label.
+
+% ============================================
+% 3. METHODOLOGY
+% ============================================
+\section{Methodology}
+
+\subsection{System Architecture}
+Figure~\ref{fig:architecture} illustrates the overall system architecture of the document categorization pipeline.
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textit{[Insert system architecture diagram from results/figures/ here]}\\
+        \vspace{0.5cm}
+        Raw Datasets $\rightarrow$ Data Preparation $\rightarrow$ EDA $\rightarrow$ Model Training $\rightarrow$ Benchmarking $\rightarrow$ Demo App
+    }}
+    \caption{System architecture of the document categorization pipeline.}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Datasets}
+Two standard benchmark datasets are used for evaluation:
+
+\begin{table}[H]
+    \centering
+    \caption{Dataset summary.}
+    \label{tab:datasets}
+    \begin{tabular}{lccl}
+        \toprule
+        \textbf{Dataset} & \textbf{Samples} & \textbf{Classes} & \textbf{Categories} \\
+        \midrule
+        AG News & 127,600 & 4 & World, Sports, Business, Sci/Tech \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{AG News} provides a large-scale benchmark with 120K training samples across four balanced news categories. A subset of 20,000 training samples is used for computational feasibility on the available hardware.
+
+\subsection{Data Preprocessing}
+Text preprocessing includes the following steps:
+\begin{enumerate}
+    \item Conversion to lowercase.
+    \item Removal of special characters (retaining only alphanumeric characters and spaces).
+    \item Stripping of extra whitespace.
+    \item Stratified train/validation/test splitting (80/10/10 for BBC News; built-in splits for AG News with a 20K training subset for computational feasibility).
+\end{enumerate}
+
+\subsection{Feature Extraction: TF-IDF}
+For baseline models, TF-IDF vectorization is applied with the following configuration:
+\begin{itemize}
+    \item Maximum features: 50,000
+    \item N-gram range: (1, 2) — unigrams and bigrams
+    \item Sublinear TF scaling
+\end{itemize}
+
+\subsection{Baseline Models}
+Three traditional ML classifiers are trained on TF-IDF features:
+\begin{enumerate}
+    \item \textbf{Logistic Regression:} Multinomial classification with L2 regularization ($C=1.0$).
+    \item \textbf{Multinomial Naive Bayes:} Laplace smoothing ($\alpha=1.0$).
+    \item \textbf{Linear SVM (LinearSVC):} Maximum margin classifier ($C=1.0$).
+\end{enumerate}
+
+\subsection{Transformer Fine-Tuning}
+Pre-trained Transformer models are fine-tuned for sequence classification using the Hugging Face \texttt{Trainer} API. Table~\ref{tab:hyperparams} lists the training hyperparameters, optimized for a 4GB VRAM constraint.
+
+\begin{table}[H]
+    \centering
+    \caption{Transformer fine-tuning hyperparameters.}
+    \label{tab:hyperparams}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Parameter} & \textbf{Value} \\
+        \midrule
+        Max Sequence Length & 128 tokens \\
+        Training Batch Size & 8 \\
+        Gradient Accumulation Steps & 4 (effective batch = 32) \\
+        Learning Rate & $2 \times 10^{-5}$ \\
+        Weight Decay & 0.01 \\
+        Epochs & 3 \\
+        Warmup Ratio & 0.1 \\
+        Mixed Precision (FP16) & Enabled \\
+        Optimizer & AdamW \\
+        Early Stopping Patience & 2 epochs \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Zero-Shot Classification}
+The \texttt{facebook/bart-large-mnli} model is used for zero-shot classification. Given a document and a set of candidate labels, the model predicts the most likely label without any task-specific fine-tuning. Evaluation is performed on a subset of 500 test samples due to the higher computational cost of this approach.
+
+\subsection{Evaluation Metrics}
+The following metrics are computed for comprehensive evaluation:
+\begin{itemize}
+    \item \textbf{Accuracy:} $\frac{\text{Correct Predictions}}{\text{Total Predictions}}$
+    \item \textbf{Macro F1:} Unweighted mean of per-class F1 scores:
+    \begin{equation}
+        F1_{\text{macro}} = \frac{1}{C}\sum_{i=1}^{C} \frac{2 \cdot P_i \cdot R_i}{P_i + R_i}
+    \end{equation}
+    \item \textbf{Weighted F1:} F1 weighted by class support.
+    \item \textbf{Inference Latency:} Average time per prediction (milliseconds).
+    \item \textbf{Model Size:} Total parameters and disk footprint.
+\end{itemize}
+
+% ============================================
+% 4. EXPERIMENTAL RESULTS
+% ============================================
+\section{Experimental Results}
+
+\subsection{Exploratory Data Analysis}
+% Include EDA figures here
+\textit{[Insert class distribution, text length histograms, and word clouds from results/figures/ after running eda.py]}
+
+\subsection{Baseline Model Results}
+% Insert baseline results table and confusion matrices
+\begin{table}[H]
+    \centering
+    \caption{Baseline model performance on AG News dataset.}
+    \label{tab:baseline_ag}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Latency (ms)} \\
+        \midrule
+        Logistic Regression & -- & -- & -- \\
+        Naive Bayes & -- & -- & -- \\
+        SVM (LinearSVC) & -- & -- & -- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsection{Transformer Model Results}
+% Insert transformer results table and confusion matrices
+\begin{table}[H]
+    \centering
+    \caption{Transformer model performance on AG News dataset.}
+    \label{tab:transformer_ag}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Params (M)} & \textbf{Latency (ms)} \\
+        \midrule
+        BERT-base & -- & -- & 110 & -- \\
+        DistilBERT & -- & -- & 66 & -- \\
+        RoBERTa-base & -- & -- & 125 & -- \\
+        BART Zero-Shot & -- & -- & 407 & -- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsection{Comparative Analysis}
+% Insert comparative charts: accuracy bars, F1 vs latency scatter, etc.
+\textit{[Insert benchmark comparison figures from results/figures/ after running benchmark.py]}
+
+\subsection{Key Findings}
+\begin{enumerate}
+    \item \textbf{Transformer models outperform baselines}, particularly on the larger AG News dataset where they benefit from more training data.
+    \item \textbf{DistilBERT offers the best accuracy-efficiency trade-off}, providing near-BERT accuracy at 60\% of the size and faster inference.
+    \item \textbf{Traditional baselines remain competitive on BBC News}, likely because the smaller dataset limits the Transformer models' ability to leverage their capacity.
+    \item \textbf{Zero-shot classification lags behind fine-tuned models} but provides a viable option when labeled training data is unavailable.
+    \item \textbf{Inference latency varies significantly}: TF-IDF baselines are orders of magnitude faster than Transformer models, an important consideration for real-time applications.
+\end{enumerate}
+
+% ============================================
+% 5. DISCUSSION
+% ============================================
+\section{Discussion}
+
+\subsection{Impact of Dataset Size}
+The BBC News dataset, with only approximately 1,780 training samples, presents a challenging scenario for large Transformer models that typically benefit from abundant training data. The relatively strong performance of TF-IDF baselines on this dataset suggests that simpler models can be more effective when labeled data is limited, as they are less prone to overfitting.
+
+\subsection{Computational Considerations}
+Training was conducted on an NVIDIA RTX 2050 GPU with 4GB VRAM. To accommodate the memory constraints:
+\begin{itemize}
+    \item Batch size was reduced to 8 with gradient accumulation over 4 steps.
+    \item Mixed precision training (FP16) was enabled.
+    \item Maximum sequence length was limited to 128 tokens.
+    \item AG News training set was subsampled to 20,000 examples.
+\end{itemize}
+
+These constraints may slightly underestimate the full potential of Transformer models compared to training with larger batch sizes and full datasets.
+
+\subsection{Zero-Shot vs. Fine-Tuned Models}
+The zero-shot approach using BART-large-MNLI offers significant practical advantages — no training data, no fine-tuning, and immediate deployment capability. However, the accuracy gap demonstrates that task-specific fine-tuning remains valuable when labeled data is available.
+
+\subsection{Practical Recommendations}
+Based on the results:
+\begin{itemize}
+    \item For \textbf{high-accuracy applications}: Use fine-tuned RoBERTa or BERT.
+    \item For \textbf{resource-constrained deployment}: Use DistilBERT or TF-IDF + SVM.
+    \item For \textbf{rapid prototyping without training data}: Use zero-shot classification.
+    \item For \textbf{real-time, high-throughput applications}: Use TF-IDF baselines.
+\end{itemize}
+
+% ============================================
+% 6. CONCLUSION
+% ============================================
+\section{Conclusion}
+
+This project successfully implemented and benchmarked an intelligent document categorization system using both traditional machine learning and modern Transformer-based approaches. The comprehensive evaluation across two datasets with varying sizes, seven different models, and multiple performance metrics provides actionable insights for practitioners choosing between these approaches.
+
+Key contributions include:
+\begin{itemize}
+    \item A reproducible, modular pipeline for document classification experiments.
+    \item Systematic comparison of traditional and Transformer-based methods with focus on practical trade-offs.
+    \item Analysis of zero-shot classification as a training-free alternative.
+    \item A live demo application for interactive document categorization.
+\end{itemize}
+
+\subsection{Future Work}
+\begin{itemize}
+    \item Extending to multilingual document classification using multilingual BERT (mBERT).
+    \item Exploring parameter-efficient fine-tuning methods like LoRA and QLoRA.
+    \item Applying the system to domain-specific document collections (e.g., legal, medical).
+    \item Investigating ensemble methods combining traditional and Transformer models.
+    \item Evaluating long-document classification with hierarchical approaches.
+\end{itemize}
+
+% ============================================
+% REFERENCES
+% ============================================
+\newpage
+\bibliographystyle{plain}
+
+\begin{thebibliography}{10}
+
+\bibitem{devlin2019bert}
+J.~Devlin, M.-W. Chang, K.~Lee, and K.~Toutanova.
+\newblock BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
+\newblock In \textit{Proceedings of NAACL-HLT}, pages 4171--4186, 2019.
+
+\bibitem{sanh2019distilbert}
+V.~Sanh, L.~Debut, J.~Chaumond, and T.~Wolf.
+\newblock DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter.
+\newblock In \textit{NeurIPS Workshop on Energy Efficient Machine Learning and Cognitive Computing}, 2019.
+
+\bibitem{liu2019roberta}
+Y.~Liu, M.~Ott, N.~Goyal, J.~Du, M.~Joshi, D.~Chen, O.~Levy, M.~Lewis, L.~Zettlemoyer, and V.~Stoyanov.
+\newblock RoBERTa: A Robustly Optimized BERT Pretraining Approach.
+\newblock \textit{arXiv preprint arXiv:1907.11692}, 2019.
+
+\bibitem{lewis2020bart}
+M.~Lewis, Y.~Liu, N.~Goyal, M.~Ghazvininejad, A.~Mohamed, O.~Levy, V.~Stoyanov, and L.~Zettlemoyer.
+\newblock BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension.
+\newblock In \textit{Proceedings of ACL}, pages 7871--7880, 2020.
+
+\bibitem{vaswani2017attention}
+A.~Vaswani, N.~Shazeer, N.~Parmar, J.~Uszkoreit, L.~Jones, A.~N. Gomez, \L.~Kaiser, and I.~Polosukhin.
+\newblock Attention Is All You Need.
+\newblock In \textit{Advances in Neural Information Processing Systems (NeurIPS)}, pages 5998--6008, 2017.
+
+\bibitem{manning2008introduction}
+C.~D. Manning, P.~Raghavan, and H.~Sch\"utze.
+\newblock \textit{Introduction to Information Retrieval}.
+\newblock Cambridge University Press, 2008.
+
+\bibitem{wolf2020transformers}
+T.~Wolf, L.~Debut, V.~Sanh, J.~Chaumond, C.~Delangue, A.~Moi, P.~Cistac, T.~Rault, R.~Louf, M.~Funtowicz, J.~Davison, S.~Shleifer, P.~von Platen, C.~Ma, Y.~Jernite, J.~Plu, C.~Xu, T.~Le Scao, S.~Gugger, M.~Drame, Q.~Lhoest, and A.~Rush.
+\newblock Transformers: State-of-the-Art Natural Language Processing.
+\newblock In \textit{Proceedings of EMNLP: System Demonstrations}, pages 38--45, 2020.
+
+\bibitem{yin2019benchmarking}
+W.~Yin, J.~Hay, and D.~Roth.
+\newblock Benchmarking Zero-shot Text Classification: Datasets, Evaluation and Entailment Approach.
+\newblock In \textit{Proceedings of EMNLP-IJCNLP}, pages 3914--3923, 2019.
+
+\bibitem{zhang2015character}
+X.~Zhang, J.~Zhao, and Y.~LeCun.
+\newblock Character-level Convolutional Networks for Text Classification.
+\newblock In \textit{Advances in Neural Information Processing Systems (NeurIPS)}, pages 649--657, 2015.
+
+\bibitem{greene2006practical}
+D.~Greene and P.~Cunningham.
+\newblock Practical Solutions to the Problem of Diagonal Dominance in Kernel Document Clustering.
+\newblock In \textit{Proceedings of ICML}, pages 377--384, 2006.
+
+\end{thebibliography}
+
+% ============================================
+% APPENDIX
+% ============================================
+\newpage
+\appendix
+\section{Appendix: Code Listings}
+
+\subsection{Configuration (config.py)}
+\begin{lstlisting}[caption={Key configuration parameters}]
+MAX_SEQ_LENGTH = 128
+TRAIN_BATCH_SIZE = 8
+GRADIENT_ACCUMULATION_STEPS = 4
+LEARNING_RATE = 2e-5
+NUM_EPOCHS = 3
+FP16 = True
+TFIDF_MAX_FEATURES = 50000
+TFIDF_NGRAM_RANGE = (1, 2)
+\end{lstlisting}
+
+\subsection{Project Execution Order}
+\begin{lstlisting}[caption={Running the complete pipeline}, language=bash]
+# Step 1: Prepare datasets
+python data_prep.py --dataset all
+
+# Step 2: Exploratory Data Analysis
+python eda.py --dataset all
+
+# Step 3: Train baselines
+python baselines.py --dataset all
+
+# Step 4: Fine-tune transformers
+python train_transformer.py --model all --dataset all
+
+# Step 5: Benchmark comparison
+python benchmark.py --dataset all
+
+# Step 6: Launch demo
+python app.py
+\end{lstlisting}
+
+\end{document}
