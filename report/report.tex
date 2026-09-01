@@ -304,7 +304,6 @@ The following metrics are computed for comprehensive evaluation:
 \textit{[Insert class distribution, text length histograms, and word clouds from results/figures/ after running eda.py]}
 
 \subsection{Baseline Model Results}
-% Insert baseline results table and confusion matrices
 \begin{table}[H]
     \centering
     \caption{Baseline model performance on AG News dataset.}
@@ -313,16 +312,17 @@ The following metrics are computed for comprehensive evaluation:
         \toprule
         \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Latency (ms)} \\
         \midrule
-        Logistic Regression & -- & -- & -- \\
-        Naive Bayes & -- & -- & -- \\
-        SVM (LinearSVC) & -- & -- & -- \\
+        Logistic Regression & 0.8932 & 0.8928 & 0.40 \\
+        Naive Bayes & 0.8909 & 0.8905 & 1.13 \\
+        SVM (LinearSVC) & \textbf{0.9011} & \textbf{0.9008} & 0.42 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
+Among the traditional baselines, SVM (LinearSVC) achieved the highest accuracy of 90.11\% with a Macro F1 of 0.9008. All three baselines demonstrated sub-millisecond to low-millisecond inference latency, making them highly suitable for real-time applications. Logistic Regression was the fastest at 0.40 ms per sample.
+
 
 \subsection{Transformer Model Results}
-% Insert transformer results table and confusion matrices
 \begin{table}[H]
     \centering
     \caption{Transformer model performance on AG News dataset.}
@@ -331,26 +331,46 @@ The following metrics are computed for comprehensive evaluation:
         \toprule
         \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Params (M)} & \textbf{Latency (ms)} \\
         \midrule
-        BERT-base & -- & -- & 110 & -- \\
-        DistilBERT & -- & -- & 66 & -- \\
-        RoBERTa-base & -- & -- & 125 & -- \\
-        BART Zero-Shot & -- & -- & 407 & -- \\
+        BERT-base & \textbf{0.9229} & \textbf{0.9227} & 110 & 34.96 \\
+        DistilBERT & 0.9228 & 0.9227 & 66 & \textbf{12.55} \\
+        RoBERTa-base & 0.9205 & 0.9204 & 125 & 19.46 \\
+        BART Zero-Shot & 0.7140 & 0.6961 & 407 & 186.72 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
+BERT and DistilBERT achieved nearly identical accuracy (92.29\% vs 92.28\%), while DistilBERT was 2.8$\times$ faster in inference (12.55 ms vs 34.96 ms) with only 60\% of the parameters. RoBERTa performed slightly lower at 92.05\%. The zero-shot BART model, requiring no task-specific training, achieved 71.40\% accuracy --- a 21\% gap compared to fine-tuned models.
 
 \subsection{Comparative Analysis}
-% Insert comparative charts: accuracy bars, F1 vs latency scatter, etc.
-\textit{[Insert benchmark comparison figures from results/figures/ after running benchmark.py]}
+
+Table~\ref{tab:comparison} presents the unified comparison across all seven models.
+
+\begin{table}[H]
+    \centering
+    \caption{Unified performance comparison across all models on AG News.}
+    \label{tab:comparison}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Latency (ms)} & \textbf{Type} \\
+        \midrule
+        BERT-base & \textbf{0.9229} & \textbf{0.9227} & 34.96 & Transformer \\
+        DistilBERT & 0.9228 & 0.9227 & 12.55 & Transformer \\
+        RoBERTa-base & 0.9205 & 0.9204 & 19.46 & Transformer \\
+        SVM (LinearSVC) & 0.9011 & 0.9008 & \textbf{0.42} & Baseline \\
+        Logistic Regression & 0.8932 & 0.8928 & 0.40 & Baseline \\
+        Naive Bayes & 0.8909 & 0.8905 & 1.13 & Baseline \\
+        BART Zero-Shot & 0.7140 & 0.6961 & 186.72 & Zero-Shot \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \subsection{Key Findings}
 \begin{enumerate}
-    \item \textbf{Transformer models outperform baselines}, particularly on the larger AG News dataset where they benefit from more training data.
-    \item \textbf{DistilBERT offers the best accuracy-efficiency trade-off}, providing near-BERT accuracy at 60\% of the size and faster inference.
-    \item \textbf{Traditional baselines remain competitive on BBC News}, likely because the smaller dataset limits the Transformer models' ability to leverage their capacity.
-    \item \textbf{Zero-shot classification lags behind fine-tuned models} but provides a viable option when labeled training data is unavailable.
-    \item \textbf{Inference latency varies significantly}: TF-IDF baselines are orders of magnitude faster than Transformer models, an important consideration for real-time applications.
+    \item \textbf{Transformer models outperform traditional baselines} by approximately 2 percentage points (92.3\% vs 90.1\%), demonstrating the value of pre-trained contextual representations over TF-IDF features.
+    \item \textbf{DistilBERT offers the best accuracy-efficiency trade-off}, matching BERT's accuracy (92.28\% vs 92.29\%) while being 2.8$\times$ faster and using only 60\% of the parameters (66M vs 110M).
+    \item \textbf{Zero-shot classification lags significantly} at 71.4\% accuracy, a 21\% gap compared to fine-tuned models, confirming that task-specific fine-tuning remains essential for high-accuracy applications.
+    \item \textbf{Inference latency varies by two orders of magnitude}: TF-IDF baselines operate at 0.4 ms per sample while Transformer models require 12--35 ms and zero-shot requires 187 ms, a critical consideration for deployment.
+    \item \textbf{SVM is the strongest traditional baseline} at 90.1\%, outperforming Logistic Regression and Naive Bayes while maintaining sub-millisecond latency.
 \end{enumerate}
 
 % ============================================
@@ -358,8 +378,8 @@ The following metrics are computed for comprehensive evaluation:
 % ============================================
 \section{Discussion}
 
-\subsection{Impact of Dataset Size}
-The BBC News dataset, with only approximately 1,780 training samples, presents a challenging scenario for large Transformer models that typically benefit from abundant training data. The relatively strong performance of TF-IDF baselines on this dataset suggests that simpler models can be more effective when labeled data is limited, as they are less prone to overfitting.
+\subsection{Impact of Training Data Size}
+The AG News training subset was limited to 20,000 samples (from the full 120,000) due to GPU memory constraints. Despite using only 16.7\% of the available training data, Transformer models achieved over 92\% accuracy, demonstrating the strong transfer learning capabilities of pre-trained language models. Training on the full dataset would likely yield further improvements.
 
 \subsection{Computational Considerations}
 Training was conducted on an NVIDIA RTX 2050 GPU with 4GB VRAM. To accommodate the memory constraints:
@@ -373,15 +393,15 @@ Training was conducted on an NVIDIA RTX 2050 GPU with 4GB VRAM. To accommodate t
 These constraints may slightly underestimate the full potential of Transformer models compared to training with larger batch sizes and full datasets.
 
 \subsection{Zero-Shot vs. Fine-Tuned Models}
-The zero-shot approach using BART-large-MNLI offers significant practical advantages — no training data, no fine-tuning, and immediate deployment capability. However, the accuracy gap demonstrates that task-specific fine-tuning remains valuable when labeled data is available.
+The zero-shot approach using BART-large-MNLI offers significant practical advantages --- no training data, no fine-tuning, and immediate deployment capability. However, the 21 percentage point accuracy gap (71.4\% vs 92.3\%) demonstrates that task-specific fine-tuning remains essential when labeled data is available and high accuracy is required.
 
 \subsection{Practical Recommendations}
-Based on the results:
+Based on the experimental results:
 \begin{itemize}
-    \item For \textbf{high-accuracy applications}: Use fine-tuned RoBERTa or BERT.
-    \item For \textbf{resource-constrained deployment}: Use DistilBERT or TF-IDF + SVM.
-    \item For \textbf{rapid prototyping without training data}: Use zero-shot classification.
-    \item For \textbf{real-time, high-throughput applications}: Use TF-IDF baselines.
+    \item For \textbf{high-accuracy applications}: Use fine-tuned BERT or DistilBERT (92.3\% accuracy).
+    \item For \textbf{resource-constrained deployment}: Use DistilBERT (66M params, 12.5 ms latency) or TF-IDF + SVM (0.42 ms latency).
+    \item For \textbf{rapid prototyping without training data}: Use zero-shot classification (71.4\% accuracy, no training required).
+    \item For \textbf{real-time, high-throughput applications}: Use TF-IDF baselines (sub-millisecond latency, 90\% accuracy).
 \end{itemize}
 
 % ============================================
@@ -389,7 +409,7 @@ Based on the results:
 % ============================================
 \section{Conclusion}
 
-This project successfully implemented and benchmarked an intelligent document categorization system using both traditional machine learning and modern Transformer-based approaches. The comprehensive evaluation across two datasets with varying sizes, seven different models, and multiple performance metrics provides actionable insights for practitioners choosing between these approaches.
+This project successfully implemented and benchmarked an intelligent document categorization system using both traditional machine learning and modern Transformer-based approaches. The comprehensive evaluation on the AG News dataset with seven different models and multiple performance metrics provides actionable insights for practitioners choosing between these approaches. Notably, DistilBERT emerged as the best overall model, matching BERT's 92.3\% accuracy while being 2.8$\times$ faster.
 
 Key contributions include:
 \begin{itemize}
