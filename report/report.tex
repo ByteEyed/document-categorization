@@ -226,7 +226,7 @@ Two standard benchmark datasets are used for evaluation:
     \end{tabular}
 \end{table}
 
-\textbf{AG News} provides a large-scale benchmark with 120K training samples across four balanced news categories. A subset of 20,000 training samples is used for computational feasibility on the available hardware.
+\textbf{AG News} (accessible via Hugging Face at \url{https://huggingface.co/datasets/fancyzhx/ag_news}) provides a large-scale benchmark with 120K training samples across four balanced news categories. A subset of 20,000 training samples is used for computational feasibility on the available hardware.
 
 \subsection{Data Preprocessing}
 Text preprocessing includes the following steps:
@@ -364,6 +364,29 @@ Table~\ref{tab:comparison} presents the unified comparison across all seven mode
     \end{tabular}
 \end{table}
 
+\subsection{Receiver Operating Characteristic (ROC) and Multi-Class AUC Analysis}
+To evaluate classification discriminability independent of arbitrary decision thresholds, One-vs-Rest (OvR) Receiver Operating Characteristic (ROC) curves and Area Under the Curve (AUC) metrics were computed across all probability-producing models on the 7,600-sample AG News test set.
+
+\begin{table}[H]
+    \centering
+    \caption{Multi-class ROC-AUC scores (One-vs-Rest) across benchmarked models on AG News.}
+    \label{tab:roc_auc}
+    \begin{tabular}{lcccccc}
+        \toprule
+        \textbf{Model} & \textbf{Macro AUC} & \textbf{Micro AUC} & \textbf{World} & \textbf{Sports} & \textbf{Business} & \textbf{Sci/Tech} \\
+        \midrule
+        BERT-base & \textbf{0.9868} & \textbf{0.9889} & \textbf{0.9839} & \textbf{0.9974} & \textbf{0.9812} & \textbf{0.9843} \\
+        DistilBERT & 0.9861 & 0.9883 & 0.9826 & 0.9973 & 0.9801 & 0.9839 \\
+        RoBERTa-base & 0.9852 & 0.9869 & 0.9828 & 0.9964 & 0.9789 & 0.9821 \\
+        SVM (LinearSVC) & 0.9774 & 0.9786 & 0.9745 & 0.9944 & 0.9662 & 0.9739 \\
+        Logistic Regression & 0.9762 & 0.9778 & 0.9715 & 0.9935 & 0.9661 & 0.9733 \\
+        Naive Bayes & 0.9738 & 0.9756 & 0.9654 & 0.9939 & 0.9634 & 0.9719 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Across all models, the \textit{Sports} class achieved the highest AUC ($>0.993$), reflecting a distinct domain-specific vocabulary. Conversely, \textit{Business} and \textit{Sci/Tech} exhibited the lowest AUCs ($0.963$--$0.981$) due to shared technical and commercial terms in technology corporate news. DistilBERT closely matches BERT with a Macro AUC of 0.9861, demonstrating excellent probability calibration.
+
 \subsection{Key Findings}
 \begin{enumerate}
     \item \textbf{Transformer models outperform traditional baselines} by approximately 2 percentage points (92.3\% vs 90.1\%), demonstrating the value of pre-trained contextual representations over TF-IDF features.
@@ -409,23 +432,37 @@ Based on the experimental results:
 % ============================================
 \section{Conclusion}
 
-This project successfully implemented and benchmarked an intelligent document categorization system using both traditional machine learning and modern Transformer-based approaches. The comprehensive evaluation on the AG News dataset with seven different models and multiple performance metrics provides actionable insights for practitioners choosing between these approaches. Notably, DistilBERT emerged as the best overall model, matching BERT's 92.3\% accuracy while being 2.8$\times$ faster.
+This project successfully designed, implemented, and benchmarked an end-to-end intelligent document categorization framework on the AG News corpus. By systematically comparing traditional TF-IDF classifiers against state-of-the-art Hugging Face Transformers and zero-shot NLI models across accuracy, macro/micro F1, multi-class ROC-AUC, and inference latency, this work provides clear empirical guidelines for deploying NLP systems under diverse computational constraints.
 
-Key contributions include:
+\subsection{Key Findings}
 \begin{itemize}
-    \item A reproducible, modular pipeline for document classification experiments.
-    \item Systematic comparison of traditional and Transformer-based methods with focus on practical trade-offs.
-    \item Analysis of zero-shot classification as a training-free alternative.
-    \item A live demo application for interactive document categorization.
+    \item \textbf{DistilBERT Delivers the Optimal Trade-Off:} DistilBERT achieved 92.28\% accuracy (essentially matching BERT's 92.29\%) and a 0.9861 Macro ROC-AUC while operating 2.8$\times$ faster with 40\% fewer parameters.
+    \item \textbf{Linear SVM is Ideal for Ultra-Low Latency:} TF-IDF + LinearSVC provided 90.11\% accuracy at 0.42 ms latency, delivering 97.6\% of BERT's accuracy at less than 1/80th the computational cost.
+    \item \textbf{Zero-Shot Viability in Cold-Start Scenarios:} BART-large-MNLI attained 71.40\% accuracy without requiring any training examples or parameter updates.
+    \item \textbf{Class Separability Characteristics:} The \textit{Sports} category exhibited the cleanest separation ($>0.99$ AUC), whereas \textit{Business} and \textit{Sci/Tech} exhibited the highest semantic cross-contamination due to corporate tech reporting.
 \end{itemize}
 
-\subsection{Future Work}
+\subsection{Challenges Faced}
 \begin{itemize}
-    \item Extending to multilingual document classification using multilingual BERT (mBERT).
-    \item Exploring parameter-efficient fine-tuning methods like LoRA and QLoRA.
-    \item Applying the system to domain-specific document collections (e.g., legal, medical).
-    \item Investigating ensemble methods combining traditional and Transformer models.
-    \item Evaluating long-document classification with hierarchical approaches.
+    \item \textbf{Hardware and Memory Constraints (4GB VRAM):} Training 110M+ parameter Transformers on a mobile workstation GPU (NVIDIA RTX 2050 with 4GB VRAM) led to CUDA Out-Of-Memory exceptions under standard batch sizes. This was successfully resolved by introducing mixed precision (FP16), small per-device batch sizes (8), gradient accumulation over 4 steps, and sequence truncation to 128 tokens.
+    \item \textbf{Multi-Class Probability Calibration:} Margin-based linear classifiers (LinearSVC) do not natively produce calibrated posterior probabilities required for ROC analysis. A softmax-calibrated decision function was formulated to enable unbiased One-vs-Rest ROC curve generation.
+    \item \textbf{Latency-Accuracy Trade-off:} Balancing deep contextual representations against real-time throughput constraints required systematic profiling of CPU and GPU inference latencies.
+\end{itemize}
+
+\subsection{Future Scope}
+\begin{itemize}
+    \item \textbf{Parameter-Efficient Fine-Tuning (PEFT):} Integrating LoRA and QLoRA to enable fine-tuning of modern open-weights instruction models (such as Llama 3 and Mistral 7B) within consumer hardware limits.
+    \item \textbf{Multilingual Document Categorization:} Expanding the pipeline using Multilingual BERT (mBERT) and XLM-RoBERTa for cross-lingual enterprise document indexing.
+    \item \textbf{Hierarchical and Long-Document Attention:} Incorporating chunking and hierarchical pooling mechanisms or Longformer architectures to categorize multi-page contracts and legal briefs without truncation.
+    \item \textbf{Tiered Inference Ensembles:} Deploying a dual-stage pipeline where high-confidence inputs are resolved by Linear SVM (0.4 ms) and ambiguous cases are escalated to DistilBERT.
+\end{itemize}
+
+\subsection{Applications of the Project}
+\begin{itemize}
+    \item \textbf{Automated Newsroom and Feed Aggregation:} Instant routing and tagging of thousands of syndicated news stories and RSS feeds.
+    \item \textbf{Enterprise Customer Support Triage:} Automatically directing incoming customer inquiries, bug reports, and billing tickets to the appropriate specialized teams.
+    \item \textbf{Legal and Regulatory Compliance Filing:} Rapid indexing, discovery, and archiving of regulatory disclosures and contracts.
+    \item \textbf{Brand Safety and Forum Moderation:} Categorizing user-generated publications and posts to prevent inappropriate placement and policy infractions.
 \end{itemize}
 
 % ============================================
