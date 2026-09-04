@@ -27,7 +27,9 @@ wordcloud>=1.9.0
 # --- Benchmarking ---
 psutil>=5.9.0
 
-# --- Demo App ---
+# --- Analytical Dashboard & Demo App ---
+streamlit>=1.30.0
+plotly>=5.18.0
 gradio>=4.25.0
 
 # --- Report Generation ---
